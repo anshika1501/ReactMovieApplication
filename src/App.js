@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect,useState } from "react";
 
 const tempMovieData = [
   {
@@ -47,10 +47,42 @@ const tempWatchedData = [
   },
 ];
 
+const KEY = "33856548";
 
 export default function App() {
   const [movies, setMovies] = useState(tempMovieData);
   const [watched, setWatched] = useState(tempWatchedData);
+  const [isLoading,setIsLoading]=useState(false);
+  const [error,setError]=useState("")
+  const query="interstellar";
+  
+  useEffect(function(){
+   
+    async function fetchMovies(){
+      try {
+        setIsLoading(true);
+      const res=await fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+
+      );
+
+      if(!res.ok) 
+        throw new Error("Something went wrong with fetching movies");
+      const data=await res.json();
+
+      if (data.Response==='False') throw new Error("Movie not found");
+      setMovies(data.Search)
+    }catch (err){
+        console.error(err.message);
+        setError(err.message);
+      }finally{
+        setIsLoading(false);
+      }
+      
+    }
+      fetchMovies();
+
+    },[]);
+  
 
   return (
     <>
@@ -62,11 +94,11 @@ export default function App() {
       </NavBar>
       <Main>
         <Box >
-        <MovieList movies={movies} />
+          {isLoading && <Loader/>}
+          {!isLoading && !error && <MovieList movies={movies}/>}
+        {error && <ErrorMessage message={error}/>}
         </Box>
-        
         <Box>
-          
             <WatchedSummary watched={watched} />
             <WatchedMoviesList watched={watched} />
 
@@ -76,6 +108,18 @@ export default function App() {
 
     </>
   );
+}
+
+function Loader(){
+  return <p className="Loader">Loading...</p>
+}
+
+function ErrorMessage({message}){
+  return (
+    <p className="error">
+      <span>💀</span>{message}
+    </p>
+  )
 }
 
 const average = (arr) =>
@@ -180,7 +224,7 @@ function MovieList({movies}){
   </ul>)
 }
 
-function Movie(movie){
+function Movie({movie}){
   return <li >
         <img src={movie.poster} alt={`${movie.Title} poster`}></img>
         <h3>{movie.Title}</h3>
@@ -195,9 +239,13 @@ function Movie(movie){
 
 }
 
+/*
+useEffect(function () {
+  if (!title) return;
+  document.title = `Movie | ${title}`;
 
-
-
+}, [title]);
+*/
 
 function WatchedSummary({watched}){
   const avgImdbRating = average(watched.map((movie) => movie.imdbRating));
